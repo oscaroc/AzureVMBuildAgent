@@ -1,0 +1,194 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "networkInterfaceName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publicIpAddressDnsName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resourcegroup_Location": {
+      "type": "string",
+      "defaultValue": "East US",
+      "allowedValues": [
+        "West Europe",
+        "East Asia",
+        "Central US",
+        "East US"
+      ],
+      "metadata": {
+        "description": "This is the required location for the resource group"
+      }
+    },
+    "resourcegroup_Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "storageAccount_Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS"
+      ]
+    },
+    "virtualMachineAdminPassword": {
+      "type": "securestring"
+    },
+    "virtualMachineAdminUserName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "virtualMachineName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "virtualMachineVisualStudioVersion": {
+      "allowedValues": [
+        "VS-2015-Enterprise-AzureSDK-2.7-WS2012R2",
+        "VS-2015-Community-AzureSDK-2.7-WS2012R2"
+      ],
+      "defaultValue": "VS-2015-Community-AzureSDK-2.7-WS2012R2",
+      "metadata": {
+        "description": "Which version of Visual Studio you would like to deploy"
+      },
+      "type": "string"
+    },
+    "virtualNetwork_Name": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-05-01-preview",
+      "location": "[parameters('resourcegroup_Location')]",
+      "name": "[parameters('storageAccount_Name')]",
+      "properties": {
+        "accountType": "[parameters('StorageAccountType')]"
+      },
+      "type": "Microsoft.Storage/storageAccounts"
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "location": "[parameters('resourcegroup_Location')]",
+      "name": "[parameters('PublicIpAddressDnsName')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('PublicIpAddressDnsName')]"
+        }
+      },
+      "type": "Microsoft.Network/publicIPAddresses"
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('virtualNetwork_Name')]",
+      "location": "[parameters('resourcegroup_Location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', parameters('PublicIpAddressDnsName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetwork_Name'))]"
+      ],
+      "location": "[parameters('resourcegroup_Location')]",
+      "name": "[parameters('NetworkInterfaceName')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('PublicIpAddressDnsName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccount_Name'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', parameters('NetworkInterfaceName'))]"
+      ],
+      "location": "[parameters('resourcegroup_Location')]",
+      "name": "[parameters('VirtualMachineName')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('VirtualMachineName')]",
+          "adminUsername": "[parameters('VirtualMachineAdminUserName')]",
+          "adminPassword": "[parameters('VirtualMachineAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[parameters('VirtualMachineVisualStudioVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccount_Name'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),'.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',parameters('NetworkInterfaceName'))]"
+            }
+          ]
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    }
+  ],
+  "variables": {
+    "addressPrefix": "10.0.0.0/16",
+    "imageOffer": "VisualStudio",
+    "imagePublisher": "MicrosoftVisualStudio",
+    "OSDiskName": "VirtualMachineOSDisk",
+    "publicIPAddressType": "Dynamic",
+    "subnetName": "Subnet",
+    "subnetPrefix": "10.0.0.0/24",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+    "vmSize": "Standard_D1",
+    "vmStorageAccountContainerName": "vhds",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('virtualNetwork_Name'))]"
+  }
+}

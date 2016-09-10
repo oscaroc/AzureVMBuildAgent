@@ -1,0 +1,39 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "networkInterfaceName": {
+      "value": null
+    },
+    "publicIpAddressDnsName": {
+      "value": null
+    },
+    "resourcegroup_Location": {
+      "value": null
+    },
+    "resourcegroup_Name": {
+      "value": null
+    },
+    "storageAccount_Name": {
+      "value": null
+    },
+    "storageAccountType": {
+      "value": null
+    },
+    "virtualMachineAdminPassword": {
+      "value": null
+    },
+    "virtualMachineAdminUserName": {
+      "value": null
+    },
+    "virtualMachineName": {
+      "value": null
+    },
+    "virtualMachineVisualStudioVersion": {
+      "value": null
+    },
+    "virtualNetwork_Name": {
+      "value": null
+    }
+  }
+}
