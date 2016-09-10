@@ -31,9 +31,9 @@
     <None Include="Deployment.targets">
       <Visible>False</Visible>
     </None>
-    <Content Include="Parameters\windowsvm.parameters.json" />
     <Content Include="Scripts\Deploy-AzureResourceGroup.ps1" />
-    <Content Include="Templates\windowsvm.json" />
+    <None Include="Parameters\windowsvm.parameters.json" />
+    <None Include="Templates\windowsvm.json" />
   </ItemGroup>
   <Target Name="GetReferenceAssemblyPaths" />
 </Project>
